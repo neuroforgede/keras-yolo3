@@ -18,6 +18,10 @@ from yolo3.utils import letterbox_image
 import os
 from keras.utils import multi_gpu_model
 
+_HEADLESS = os.getenv('HEADLESS', 'False') == 'True'
+
+print('HEADLESS' + str(_HEADLESS))
+
 class YOLO(object):
     _defaults = {
         "model_path": 'model_data/yolo.h5',
@@ -142,8 +146,8 @@ class YOLO(object):
             top, left, bottom, right = box
             top = max(0, np.floor(top + 0.5).astype('int32'))
             left = max(0, np.floor(left + 0.5).astype('int32'))
-            bottom = min(image.size[1], np.floor(bottom + 0.5).astype('int32'))
-            right = min(image.size[0], np.floor(right + 0.5).astype('int32'))
+            bottom = max(0, min(image.size[1], np.floor(bottom + 0.5).astype('int32')))
+            right = max(0, min(image.size[0], np.floor(right + 0.5).astype('int32')))
             print(label, (left, top), (right, bottom))
 
             if top - label_size[1] >= 0:
@@ -202,8 +206,9 @@ def detect_video(yolo, video_path, output_path=""):
             curr_fps = 0
         cv2.putText(result, text=fps, org=(3, 15), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                     fontScale=0.50, color=(255, 0, 0), thickness=2)
-        cv2.namedWindow("result", cv2.WINDOW_NORMAL)
-        cv2.imshow("result", result)
+        if not _HEADLESS:
+            cv2.namedWindow("result", cv2.WINDOW_NORMAL)
+            cv2.imshow("result", result)
         if isOutput:
             out.write(result)
         if cv2.waitKey(1) & 0xFF == ord('q'):
